@@ -25,5 +25,8 @@
 	background: #f5f5f5;
 }
 .mailchimp-status.not-sent { color: #a00; }
-.mailchimp-status.sent { color:green; }
+.mailchimp-status.sent,
+.mailchimp-status.scheduled { color:green; }
+.mailchimp-status.created { color:orange; }
+a.mailchimp-status { text-decoration: underline; }
 #newsletter_template_mailchimp ul { padding:0; }

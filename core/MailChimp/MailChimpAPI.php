@@ -19,20 +19,23 @@
 			return $listData['data'];
 		}
 		
-		public function createCampaign($list, $subject, $title, $htmlTemplate, $textTemplate){
+		public function createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate){
 			$campaign = $this->call('campaigns/create', array(
-				'type'	=> 'regular',
+				'type' => 'regular',
 				'options' => array(
-					'list'	=> $list,
-					'subject' => $subject,
-					'title' => $title
+					'list_id' 		=> $list,
+					'subject' 		=> $subject,
+					'from_email'	=> $from_email,
+					'from_name'		=> $from_name,
+					'to_name'		=> $to_name,
+					'title' 		=> $title
 				),
 				'content' => array(
 					'html' => $htmlTemplate,
 					'text' => $textTemplate
 				)
 			));
-			return $campaign['data']['cid'];
+			return $campaign;
 		}
 		
 		public function sendCampaign($campaignID){

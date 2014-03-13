@@ -8,6 +8,7 @@ class EngNet_MailChimp
 	function __construct(){
 		add_filter('add_meta_boxes', array($this, 'mailchimp_add_metabox'));
 		add_action( 'wp_ajax_getMailchimpLists', array($this, 'ajax_getMailchimpLists'));
+		add_action( 'wp_ajax_createMailchimpCampaign', array($this, 'ajax_createCampaign'));
 		add_action( 'admin_menu', array($this, 'mailchimp_options_page_menu') );
 		$this->MC = new MailChimpAPI();
 	}
@@ -38,7 +39,64 @@ class EngNet_MailChimp
 	}
 	
 	
-	
+	function ajax_createCampaign(){
+		$apiKey 		= $_POST['api_key'];
+		$action			= $_POST['mailchimpAction'];
+		$list	 		= $_POST['list'];
+		$newsletter 	= $_POST['newsletter'];
+		$from_email		= $_POST['from_email'];
+		$from_name		= $_POST['from_name'];
+		$to_name		= $_POST['to_name'];
+		$subject		= $_POST['subject'];
+
+		
+		// Templater & Mailchimp
+		$Templater = new EngNet_Newsletter_Templater();
+		$this->MC->setApiKey($apiKey);
+		
+		
+		// Title
+		$newsletterPost = get_post($newsletter);
+		$title = get_field('template', $newsletter);
+		$title = $title->post_title . ' - ' . $newsletterPost->post_title;
+		
+		
+		// Templates
+		$htmlTemplate = $Templater->getNewsletterHtml($newsletter);
+		$textTemplate = $Templater->getNewsletterText($newsletter);
+		
+		
+		// Create campaign
+		$campaign = $this->MC->createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate);
+		
+		
+		if (isset($campaign['status']) && $campaign['status'] == 'error'){
+			echo json_encode(array('status' => 500, 'result' => $campaign));
+			exit(0);
+		}
+		
+		
+		if ($action == 'create'){
+			// Create only
+			add_post_meta($newsletter, 'mailchimp_status', 'created', true) || update_post_meta($newsletter, 'mailchimp_status', 'created');
+		} else if ($action == 'schedule'){
+			// Schedule Campaign
+			add_post_meta($newsletter, 'mailchimp_status', 'sent', true) || update_post_meta($newsletter, 'mailchimp_status', 'sent');
+		} else if ($action == 'send'){
+			// Send Campaign
+			add_post_meta($newsletter, 'mailchimp_status', 'sent', true) || update_post_meta($newsletter, 'mailchimp_status', 'sent');
+			$this->MC->sendCampaign($campaign['id']);
+		}
+		
+		// Attach identifiers
+		add_post_meta($newsletter, 'mailchimp_campaign', $campaign['id'], true) || update_post_meta($newsletter, 'mailchimp_campaign', $campaign['id']);
+		add_post_meta($newsletter, 'mailchimp_list', $campaign['list_id'], true) || update_post_meta($newsletter, 'mailchimp_list', $campaign['list_id']);
+add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], true) || update_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id']);
+		
+		echo json_encode(array('status' => 200, 'result' => $campaign));
+		exit(0);
+		
+	}
 	
 	
 	function ajax_getMailchimpLists(){
@@ -64,65 +122,15 @@ class EngNet_MailChimp
 		);
 	}
 	
-	function mailchimp_metabox(){
+	function mailchimp_metabox($post){
 		$accounts = get_field('mailchimp_accounts','option');
-		?>
-		<div class="main_meta_content">
-			<select id="mailchimp-account">
-				<option value="">Select MailChimp Account</option>
-				<?php foreach($accounts as $account): ?>
-				<option value="<?php echo $account['api_key']; ?>"><?php echo $account['name']; ?></option>
-				<?php endforeach; ?>
-			</select>
-			<ul id="mailchimp-lists"></ul>
-		</div>
-		<div class="bottom_meta_content">
-			<?php if ($post->post_status == 'publish'): ?>
-			<div id="delete-action">
-				<span class="mailchimp-status not-sent">Not Sent</span>
-			</div>
-			
-			<div id="publishing-action">
-				<span class="spinner"></span>
-				<input type="button" class="button button-primary button-large" value="Create" />
-				<input name="save" type="button" class="button button-primary button-large" value="Create & Send">
-			</div>
-			<div class="clear"></div>
-			<?php else: ?>
-			Please publish your newsletter
-			<?php endif; ?>
-		</div>
+		$mailchimpStatus = get_post_meta($post->ID, 'mailchimp_status', true);
+		if (empty($mailchimpStatus)) $mailchimpStatus = false;
 		
-		
-		
-		
-		
-		
-		<script type="text/javascript">
-		(function($){
-			$("#mailchimp-account").change(function(){
-				if ($(this).val().length == 0) return;
-				
-				$.post('/wp-admin/admin-ajax.php', {
-					action: 'getMailchimpLists',
-					api_key: $(this).val()
-				}, function(resp){
-					$("#mailchimp-lists").empty();
-					if (resp.length > 0){
-						var lists = $.parseJSON(resp);
-						for (var i=0; i<lists.length; i++){
-							var list = lists[i];
-							var checkbox = $("<input type='radio' name='mailchimp-list' />")
-								.val(list.id)
-								.data('default_subject', list.default_subject);
-							var label = $("<label />").text(list.name).prepend(checkbox);
-							$("<li/>").append(label).appendTo("#mailchimp-lists");
-						}
-					}
-				});
-			});
-		})(jQuery);
-		</script>
-		<?php
+		if (!$mailchimpStatus){
+			include('view/mailchimp/metabox-edit.php');
+		} else {
+			include('view/mailchimp/metabox-view.php');
+		}
 	}
 }

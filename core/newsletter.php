@@ -46,7 +46,7 @@ class EngNet_Newsletter
 	
 	
 	private function generateTemplate($preview = false){
-		echo "<h1>PLUGIN GENERATED</h1>";
+		global $wp;
 		if (isset($wp->query_vars['text_only'])){
 			header('HTTP/1.1 200 OK');
 			header('Content-Type: text/plain; charset=utf-8');
@@ -95,8 +95,8 @@ class EngNet_Newsletter
 		register_post_type('newsletter_template', $args);
 		
 		$labels = $this->populate_post_type_or_taxonomy_labels(array(
-			'name'			=> 'Newsletter Markups',
-			'singular_name'	=> 'Newsletter Markup'
+			'name'			=> 'Newsletter Templates',
+			'singular_name'	=> 'Newsletter Template'
 		));
 		$args = array(
 			'labels'				=> $labels,
@@ -117,6 +117,7 @@ class EngNet_Newsletter
 			'cb' => $columns['cb'],
 			'title' => $columns['title'],
 			'template' => "Template",
+			'mailchimp' => "MailChimp Status",
 			'date' => $columns['date']
 		);
 		$columns['Mailing List'] = "Mailing List";
@@ -128,6 +129,19 @@ class EngNet_Newsletter
 		if ($column == 'template'){
 			$template = get_field('template', $postID);
 			echo $template->post_title;
+		} else if ($column == 'mailchimp'){
+			$status = get_post_meta($postID, 'mailchimp_status', true);
+			$webid = get_post_meta($postID, 'mailchimp_campaign_web_id', true);
+			
+			if (!empty($status)): 
+			?>
+			<strong><span class="mailchimp-status <?php echo $status; ?>"><?php echo ucfirst($status); ?></span></strong><br/>
+			
+			<a href="https://admin.mailchimp.com/campaigns/show?id=<?php echo $webid; ?>" target="_blank">View Campaign</a> |
+			<a href="https://admin.mailchimp.com/reports/summary?id=<?php echo $webid; ?>" target="_blank">View Report</a>
+
+			<?php 
+			endif; 
 		}
 	}
 	
