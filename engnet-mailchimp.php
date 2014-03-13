@@ -74,6 +74,8 @@ if (!class_exists("EngNet_MailChimpPlugin")){
 		function admin_enqueue_scripts() {
 		    $admin_css_url = plugins_url('common/admin/css/', __FILE__);
 		    wp_enqueue_style('custom-admin-css', $admin_css_url . 'admin.css', false, '1.0', 'all');
+		    //wp_enqueue_script('jquery-ui-datepicker');
+			wp_enqueue_style('jquery-style', 'http://ajax.googleapis.com/ajax/libs/jqueryui/1.8.2/themes/smoothness/jquery-ui.css');
 		}
 		
 		/**

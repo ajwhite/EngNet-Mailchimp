@@ -30,3 +30,10 @@
 .mailchimp-status.created { color:orange; }
 a.mailchimp-status { text-decoration: underline; }
 #newsletter_template_mailchimp ul { padding:0; }
+
+#newsletter_template_mailchimp input[type=text] { width: 100%; padding: 5px; }
+
+#mailchimp-schedule-section { padding: 5px 0; }
+
+#mailchimp-schedule-section,
+#mailchimp-defaults {display: none;}

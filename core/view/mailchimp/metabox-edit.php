@@ -1,31 +1,40 @@
+<?php if ($post->post_status != 'publish'): ?>
 <div class="main_meta_content">
-	<div>
-		<select id="mailchimp-account">
-			<option value="">Select MailChimp Account</option>
-			<?php foreach($accounts as $account): ?>
-			<option value="<?php echo $account['api_key']; ?>"><?php echo $account['name']; ?></option>
-			<?php endforeach; ?>
-		</select>
-	</div>
+	Please save your newsletter to access MailChimp.
+</div>
+<?php else: ?>
+
+<div class="main_meta_content">
+	<ul id="mailchimp-accounts">
+		<li><strong>Select MailChimp Account</strong></li>
+		<li>
+			<select id="mailchimp-account">
+				<option value="">-- Accounts --</option>
+				<?php foreach($accounts as $account): ?>
+				<option value="<?php echo $account['api_key']; ?>"><?php echo $account['name']; ?></option>
+				<?php endforeach; ?>
+			</select>
+		</li>
+	</ul>
 	
 	<ul id="mailchimp-lists"></ul>
 	
 	<ul id="mailchimp-defaults">
 		<li>
 			<label>Default From Email</label><br/>
-			<input type="text" id="mailchimp-default-from-email" />
+			<input type="text" class="text" id="mailchimp-default-from-email" />
 		</li>
 		<li>
 			<label>Default From Name</label><br/>
-			<input type="text" id="mailchimp-default-from-name" />
+			<input type="text" class="text" id="mailchimp-default-from-name" />
 		</li>
 		<li>
 			<label>Default To Name</label><br/>
-			<input type="text" id="mailchimp-default-to-name" />
+			<input type="text" class="text" id="mailchimp-default-to-name" />
 		</li>
 		<li>
 			<label>Subject</label><br/>
-			<input type="text" id="mailchimp-default-subject" />
+			<input type="text" class="text" id="mailchimp-default-subject" />
 		</li>
 	</ul>
 	
@@ -33,27 +42,27 @@
 		<li><strong>Actions</strong></li>
 		<li>
 			<label><input type="radio" name="mailchimp-action" value="schedule" />Create &amp; Schedule Newsletter</label>
-			<div id="mailchimp-schedule-section">
-				<label>Delivery Date</label>
-				<input type="text" id="mailchimp-schedule-date" placeholder="Date" />
-				<br/>
-				<label>Delivery Time</label>
-				<select id="hour">
-					<?php for ($i=1; $i<=12; $i++): ?>
-					<option value="<?php echo $i; ?>"><?php echo $i; ?></option>
-					<?php endfor; ?>
-				</select>
-				:
-				<select>
-					<?php for ($i=0; $i<=45; $i+=15): ?>
-					<option value="<?php echo $i; ?>"><?php echo sprintf("%02s", $i); ?></option>
-					<?php endfor; ?>
-				</select>
-				<select>
-					<option value="AM">AM</option>
-					<option value="PM">PM</option>
-				</select>
-			</div>
+			
+			<ul id="mailchimp-schedule-section">
+				<li><input type="text" id="mailchimp-schedule-date" class="text" placeholder="Date" /></li>
+				<li>
+					<select id="mailchimp-schedule-hour">
+						<?php for ($i=1; $i<=12; $i++): ?>
+						<option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+						<?php endfor; ?>
+					</select>
+					:
+					<select id="mailchimp-schedule-minute">
+						<?php for ($i=0; $i<=45; $i+=15): ?>
+						<option value="<?php echo $i; ?>"><?php echo sprintf("%02s", $i); ?></option>
+						<?php endfor; ?>
+					</select>
+					<select id="mailchimp-schedule-a">
+						<option value="AM">AM</option>
+						<option value="PM">PM</option>
+					</select>
+				</li>
+			</ul>
 		</li>
 		<li>
 			<label><input type="radio" name="mailchimp-action" value="send" />Create &amp; Send</label>
@@ -67,7 +76,6 @@
 
 
 <div class="bottom_meta_content">
-	<?php if ($post->post_status == 'publish'): ?>
 	<div id="delete-action">
 		<?php if (!$mailchimpStatus): ?>
 			<span class="mailchimp-status not-sent">Not Sent</span>
@@ -83,18 +91,8 @@
 		<input type="button" class="button button-primary button-large" id="create-mailchimp-campaign" value="Create" />
 	</div>
 	<div class="clear"></div>
-	<?php else: ?>
-	Please save your newsletter.
-	<?php endif; ?>
 </div>
 
-
-
-
-<style type="text/css">
-#mailchimp-schedule-section,
-#mailchimp-defaults {display: none;}
-</style>
 
 <script type="text/javascript">
 (function($){
@@ -134,10 +132,30 @@
 			}, cb);
 		},
 		
+		getCampaignFields: function(){
+			return {
+				mailchimpAction : $("input[name=mailchimp-action]:checked").val(),
+				list			: $("input[name=mailchimp-list]:checked").val(),
+				subject			: $("#mailchimp-default-subject").val(),
+				from_email		: $("#mailchimp-default-from-email").val(),
+				from_name		: $("#mailchimp-default-from-name").val(),
+				to_name			: $("#mailchimp-default-to-name").val(),
+				schedule_date	: $("#mailchimp-schedule-date").val(),
+				schedule_time_h	: $("#mailchimp-schedule-hour").val(),
+				schedule_time_m : $("#mailchimp-schedule-minute").val(),
+				schedule_time_a : $("#mailchimp-schedule-a").val()
+			};
+		}
+		
 		events: function(){
 			var self = this;
 			
-			
+
+			$('#mailchimp-schedule-date').datepicker({
+		        dateFormat : 'mm-dd-yy',
+		        minDate: new Date()
+		    });
+
 			$("#mailchimp-account").change(function(){
 				$("#mailchimp-lists").empty();
 				$("#mailchimp-defaults").hide();
@@ -214,58 +232,12 @@
 		
 	};
 	
-	
-	MailChimpAccess.initialize();
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/*
-
-	$("#mailchimp-account").change(function(){
-		if ($(this).val().length == 0) return;
-		
-		$.post('/wp-admin/admin-ajax.php', {
-			action: 'getMailchimpLists',
-			api_key: $(this).val()
-		}, function(resp){
-			$("#mailchimp-lists").empty();
-			if (resp.length > 0){
-				var lists = $.parseJSON(resp);
-				for (var i=0; i<lists.length; i++){
-					var list = lists[i];
-					var checkbox = $("<input type='radio' name='mailchimp-list' />")
-						.val(list.id)
-						.data('default_subject', list.default_subject);
-					var label = $("<label />").text(list.name + " (" + list.stats.member_count + " members)").prepend(checkbox);
-					$("<li/>").append(label).appendTo("#mailchimp-lists");
-				}
-			}
-		});
+	$(document).ready(function(){
+		MailChimpAccess.initialize();
 	});
-	
-	$("#create-mailchimp").click(function(){
-		$.post('/wp-admin/admin-ajax.php',{
-			
-		});
-	});
-	
-	$("#mailchimp-schedule-toggle").change(function(){
-	});
-*/
+
+
 })(jQuery);
 </script>
+
+<?php endif; ?>
