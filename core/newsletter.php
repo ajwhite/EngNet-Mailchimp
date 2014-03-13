@@ -34,10 +34,32 @@ class EngNet_Newsletter
 	
 	function template_redirect(){
 		global $wp, $post, $wp_query;
-		$plugindir = dirname(__FILE__);
-		if ($wp->query_vars['post_type'] == 'newsletter_template'){
-			$this->do_theme_redirect();
+		
+		if ($wp->query_vars['post_type'] == 'newsletter_template' || $wp->query_vars['post_type'] == 'newsletter_markup'){
+			if (have_posts()){
+				$this->generateTemplate($wp->query_vars['post_type'] == 'newsletter_markup');
+			} else {
+				$wp_query->is_404 = true;
+			}
 		}
+	}
+	
+	
+	private function generateTemplate($preview = false){
+		echo "<h1>PLUGIN GENERATED</h1>";
+		if (isset($wp->query_vars['text_only'])){
+			header('HTTP/1.1 200 OK');
+			header('Content-Type: text/plain; charset=utf-8');
+			echo $this->templater->getNewsletterText(get_the_ID());
+		} else {
+			if ($preview){
+				echo $this->templater->getNewsletterHtmlPreview(get_the_ID());
+			} else {
+				echo $this->templater->getNewsletterHtml(get_the_ID());				
+			}
+
+		}
+		exit(0);
 	}
 	
 	
@@ -48,9 +70,6 @@ class EngNet_Newsletter
 			if (!isset($wp->query_vars['text_only'])){
 				echo $this->templater->getNewsletterHtml(get_the_ID());
 			} else {
-				header('HTTP/1.1 200 OK');
-				header('Content-Type: text/plain; charset=utf-8');
-				echo $this->templater->getNewsletterText(get_the_ID());
 			}
 			exit(0);
 		} else {
@@ -62,8 +81,8 @@ class EngNet_Newsletter
 	
 	function register_custom_post_types(){
 		$labels = $this->populate_post_type_or_taxonomy_labels(array(
-			'name' 			=> 'Newsletter Templates',
-			'singular_name' => 'Newsletter Template'
+			'name' 			=> 'Newsletters',
+			'singular_name' => 'Newsletter'
 		));
 		$args = array(
 			'labels'				=> $labels,

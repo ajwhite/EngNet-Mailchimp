@@ -55,11 +55,41 @@ class EngNet_Newsletter_Templater
 	
 	
 	
-	
+	function getNewsletterHtmlPreview($templateID){
+		$query = new WP_Query(array(
+			'post_type' => 'post',
+			'numberposts' => 8,
+			'orderby' => 'rand'
+		));
+			
+		while($query->have_posts()){
+			$query->the_post();
+			$ids[] = get_the_ID();
+		}
+		
+		$tagReplacements = array(
+			'PREVIEW',
+			get_permalink($templateID),
+			$this->get_article_html($ids[0], true),
+			$this->get_article_html($ids[1], true),
+			$this->get_article_html($ids[2], false),
+			$this->get_article_html($ids[3], false),
+			$this->get_article_html($ids[4], false),
+			$this->get_article_html($ids[5], false),
+			$this->get_article_html($ids[6], false),
+			$this->get_article_html($ids[7], false),
+			'<a href="http://www.superiorscales.com/"><img src="http://industrytap.engnet.atticuswhite.com/wp-content/uploads/2014/03/SuperiorScalesADnews.png"></a>'
+		);
+		
+		wp_reset_postdata();
+		
+		return $this->_getNewsletterHTML($templateID, $tagReplacements);
+		
+	}
 	
 		
 		
-	function getNewsletterHTML($newsletterID){
+	function getNewsletterHtml($newsletterID){
 		$template = get_field('template', $newsletterID);
 		$tagReplacements = array(
 			get_the_title($newsletterID),

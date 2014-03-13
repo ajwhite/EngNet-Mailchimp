@@ -1,0 +1,29 @@
+#menu-posts-newsletter_template .wp-menu-image {
+    background: url("../images/newsletter-template.png") no-repeat 6px -17px !important;
+}
+
+#menu-posts-newsletter_template:hover .wp-menu-image,
+#menu-posts-newsletter_template.wp-has-current-submenu .wp-menu-image {
+    background-position: 6px 7px !important;
+}
+
+
+#acf-field-html_template, 
+#acf-field-text_template { min-height: 500px; }
+
+.edit-php.post-type-newsletter_template select[name=seo_filter],
+.edit-php.post-type-newsletter_markup select[name=seo_filter] { display: none; }
+
+#newsletter_template_mailchimp .inside{ padding:0; margin:0; }
+#newsletter_template_mailchimp .main_meta_content {
+	padding: 10px; 
+}
+#newsletter_template_mailchimp .bottom_meta_content {
+	padding: 10px;
+	clear: both;
+	border-top: 1px solid #ddd;
+	background: #f5f5f5;
+}
+.mailchimp-status.not-sent { color: #a00; }
+.mailchimp-status.sent { color:green; }
+#newsletter_template_mailchimp ul { padding:0; }
