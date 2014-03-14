@@ -3,8 +3,8 @@
 	Please save your newsletter to access MailChimp.
 </div>
 <?php else: ?>
-
-<div class="main_meta_content">
+<div class="main_meta_content" id="mailchimp-success"></div>
+<div class="main_meta_content" id="mailchimp-forms">
 	<ul id="mailchimp-accounts">
 		<li><strong>Select MailChimp Account</strong></li>
 		<li>
@@ -18,6 +18,15 @@
 	</ul>
 	
 	<ul id="mailchimp-lists"></ul>
+	
+	<ul id="mailchimp-folders">
+		<li><strong>Folder</strong> (optional)</li>
+		<li>
+			<select id="mailchimp-folder">
+				<option value="">No Folder</option>
+			</select>
+		</li>
+	</ul>
 	
 	<ul id="mailchimp-defaults">
 		<li>
@@ -134,6 +143,15 @@
 				api_key			: self.config.api_key
 			}, cb);
 		},
+		
+		getMailchimpFolders: function(cb){
+			var self = this;
+			$.post('/wp-admin/admin-ajax.php',{
+				action			: 'getMailchimpFolders',
+				api_key			: self.config.api_key
+			}, cb);
+		},
+		
 		createCampaign: function(cb){
 			var options = this.getCampaignFields();
 			options.api_key = this.config.api_key;
@@ -146,7 +164,9 @@
 		getCampaignFields: function(){
 			return {
 				mailchimpAction : $("input[name=mailchimp-action]:checked").val(),
+				account_name	: $("#mailchimp-account option:selected").text(),
 				list			: $("input[name=mailchimp-list]:checked").val(),
+				list_name		: $("input[name=mailchimp-list]:checked").data('name'),
 				subject			: $("#mailchimp-default-subject").val(),
 				from_email		: $("#mailchimp-default-from-email").val(),
 				from_name		: $("#mailchimp-default-from-name").val(),
@@ -161,7 +181,10 @@
 				// scheduled batch campaigns
 				batch_active	: $("#mailchimp-batch-enabled").is(":checked"),
 				batch_number	: $("#mailchimp-batch-number").val(),
-				batch_interval	: $("#mailchimp-batch-interval").val()
+				batch_interval	: $("#mailchimp-batch-interval").val(),
+				
+				// folder
+				folder			: $("#mailchimp-folder").val()
 			};
 		},
 		
@@ -177,6 +200,8 @@
 			$("#mailchimp-account").change(function(){
 				$("#mailchimp-lists").empty();
 				$("#mailchimp-defaults").hide();
+				$("#mailchimp-folders").hide();
+				$("#mailchimp-folder option[value!='']").remove();
 				if ($(this).val().length == 0) {
 					self.config.api_key = false;
 					return;
@@ -192,7 +217,7 @@
 							var list = lists[i];
 							var checkbox = $("<input type='radio' name='mailchimp-list' />")
 								.val(list.id)
-								.data('default_subject', list.default_subject);
+								.data('name', list.name);
 							var label = $("<label />").text(list.name + " (" + list.stats.member_count + " members)").prepend(checkbox);
 							$("<li/>").append(label).appendTo("#mailchimp-lists");
 							
@@ -208,6 +233,18 @@
 							
 						}
 						$("#mailchimp-lists").prepend("<li><strong>Lists</srong></li>");
+					}
+				});
+				
+				self.getMailchimpFolders(function(resp){
+					if (resp.length > 0){
+						var folders = $.parseJSON(resp);
+						if (folders.length > 0){
+							$("#mailchimp-folders").show()
+							for (var i=0; i<folders.length; i++){
+								$("<option/>").val(folders[i].folder_id).html(folders[i].name).appendTo("#mailchimp-folder");
+							}
+						}
 					}
 				});
 			});
@@ -232,12 +269,39 @@
 				$(".mailchimp-spinner").show();
 				$button.attr('disabled','disabled');
 				self.createCampaign(function(resp){
-					console.log(resp);
+					var result = $.parseJSON(resp);
 					$(".mailchimp-spinner").hide();
-					$button.removeAttr('disabled');
+					if (result.status == 500){
+						alert("Error creating campaign, please attempt manually.");
+						$button.removeAttr('disabled');
+					} else {
+						$button.text('Created');
+						self.campaignSuccess();
+					}
 				});
 			});
 			
+		},
+		
+		campaignSuccess: function(){
+			var action = $("input[name=mailchimp-action]:checked").val()
+			$("#mailchimp-forms").slideUp();
+			$("#mailchimp-success").show();
+			$(".mailchimp-status").removeClass('not-sent');
+			
+			if (action == 'create'){
+				$("#mailchimp-success").html("<p>Your campaign has been successfully created</p>");
+				$("#create-mailchimp-campaign").val("Created");
+				$(".mailchimp-status").text("Created").addClass('created');
+			} else if (action == 'send'){
+				$("#mailchimp-success").html("<p>Your campaign has been successfully sent</p>");
+				$("#create-mailchimp-campaign").val("Sent");
+				$(".mailchimp-status").text("Sent").addClass('sent');
+			} else if (action == 'schedule'){
+				$("#mailchimp-success").html("<p>Your campaign has been successfully scheduled</p>");
+				$("#create-mailchimp-campaign").val("Scheduled");
+				$(".mailchimp-status").text("Scheduled").addClass("scheduled");
+			}
 		}
 		
 	};

@@ -1,28 +1,27 @@
 <div class="main_meta_content">
-	<div>
-		<strong>MailChimp Account</strong><br/>
-		-- Mailchimp Account --
-	</div>
+	<ul id="mailchimp-campaign-labels">
+		<li>
+			<strong>MailChimp Account</strong><br/>
+			<?php echo $accountName; ?>
+		</li>
+		<li>
+			<strong>MailChimp List</strong><br/>
+			<?php echo $listName; ?>
+		</li>
+		<li>
+			<strong>Mailchimp Campaign</strong><br/>
+			<?php echo $campaignName; ?>
+		</li>
+		<li>
+			<strong>Mailchimp Scheduled</strong><br/>
+			MM/dd/YYYY H:i a
+		</li>
+	</ul>
 	
-	<div>
-		<strong>MailChimp List</strong><br/>
-		-- Maichimp List --
-	</div>
-	
-	<div>
-		<strong>Mailchimp Campaign</strong><br/>
-		--- Mailchimp Campaign ----
-	</div>
-	
-	-- IF SCHEDULED --
-	<div>
-		<strong>Mailchimp Scheduled</strong><br/>
-		MM/dd/YYYY H:i a
-	</div>
 	
 </div>
 <style type="text/css">
-#newsletter_template_mailchimp .main_meta_content > div { margin: 10px 0; }
+
 </style>
 
 
@@ -34,9 +33,9 @@
 			<span class="mailchimp-status <?php echo $mailchimpStatus; ?>"><?php echo ucfirst($mailchimpStatus); ?></span>
 		<?php endif; ?>
 	</div>
-	<div id="publishing-action">
-		<a href="#">View Campaign</a> |
-		<a href="#">View Report</a>
+	<div id="publishing-action">	
+		<a href="https://admin.mailchimp.com/campaigns/show?id=<?php echo $webid; ?>" target="_blank">View Campaign</a> |
+		<a href="https://admin.mailchimp.com/reports/summary?id=<?php echo $webid; ?>" target="_blank">View Report</a>
 	</div>
 	<div class="clear"></div>
 </div>

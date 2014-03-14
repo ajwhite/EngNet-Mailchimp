@@ -19,7 +19,7 @@
 			return $listData['data'];
 		}
 		
-		public function createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate){
+		public function createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate, $folder=false){
 			$campaign = $this->call('campaigns/create', array(
 				'type' => 'regular',
 				'options' => array(
@@ -28,7 +28,8 @@
 					'from_email'	=> $from_email,
 					'from_name'		=> $from_name,
 					'to_name'		=> $to_name,
-					'title' 		=> $title
+					'title' 		=> $title,
+					'folder_id'		=> $folder
 				),
 				'content' => array(
 					'html' => $htmlTemplate,
@@ -53,13 +54,27 @@
 		}
 		
 		public function createCampaignSchedule($campaignID, $time){
-			$this->call('campaigns/schedule', array(
+			$campaign = $this->call('campaigns/schedule', array(
 				'cid' => $campaignID,
 				'schedule_time' => $time
 			));
+			return $campaign;
 		}
 		
-		public function createCampaignScheduleBatch(){}
+		public function createCampaignScheduleBatch($campaignID, $time, $batches, $intervals){
+			$campaign = $this->call('campaigns/schedule-batch', array(
+				'cid' => $campaignID,
+				'schedule_time' => $time,
+				'num_batches' => $batches,
+				'stagger_mins' => $intervals
+			));
+			return $campaign;
+		}
+		
+		public function getFolders(){
+			$folders = $this->call('folders/list', array('type' => 'campaign'));
+			return $folders;
+		}
 	}
 	
 ?>

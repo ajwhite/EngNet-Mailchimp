@@ -9,38 +9,15 @@ class EngNet_MailChimp
 		add_filter('add_meta_boxes', array($this, 'mailchimp_add_metabox'));
 		add_action( 'wp_ajax_getMailchimpLists', array($this, 'ajax_getMailchimpLists'));
 		add_action( 'wp_ajax_createMailchimpCampaign', array($this, 'ajax_createCampaign'));
+		add_action( 'wp_ajax_getMailchimpFolders', array($this, 'ajax_getMailchimpFolders'));
 		add_action( 'admin_menu', array($this, 'mailchimp_options_page_menu') );
 		$this->MC = new MailChimpAPI();
 	}
 	
 	
-	
-	function mailchimp_options_page_menu(){
-		add_options_page( 'MailChimp' );
-		add_submenu_page(
-			'edit.php?post_type=newsletter_template',
-			'MailChimp Settings',
-			'MailChimp Settings',
-			'edit_posts',
-			'newsletter_template_mailchimp_settings',
-			array($this, 'mailchimp_options_page')
-		);
-	}
-	
-	function mailchimp_options_page(){
-		?>
-		<div id="wrap">
-			<h2>MailChimp Settings</h2>
-			<script type="text/javascript">
-			window.location = "/wp-admin/admin.php?page=acf-options";
-			</script>
-		</div>
-		<?php
-	}
-	
 
 	
-	function createCampaign($apiKey, $list, $newsletter, $subject, $from_email, $from_name, $to_name){
+	function createCampaign($apiKey, $list, $list_name, $account_name, $newsletter, $subject, $from_email, $from_name, $to_name, $folder){
 	
 		// Templater & Mailchimp
 		$Templater = new EngNet_Newsletter_Templater();
@@ -55,9 +32,8 @@ class EngNet_MailChimp
 		$htmlTemplate = $Templater->getNewsletterHtml($newsletter);
 		$textTemplate = $Templater->getNewsletterText($newsletter);
 	
-		
 		// Create campaign
-		$campaign = $this->MC->createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate);
+		$campaign = $this->MC->createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate, $folder);
 		
 		if ($this->isMailchimpError($campaign)){
 			return false;
@@ -68,9 +44,14 @@ class EngNet_MailChimp
 		
 		// Attach identifiers
 		add_post_meta($newsletter, 'mailchimp_campaign', $campaign['id'], true) || update_post_meta($newsletter, 'mailchimp_campaign', $campaign['id']);
-		add_post_meta($newsletter, 'mailchimp_list', $campaign['list_id'], true) || update_post_meta($newsletter, 'mailchimp_list', $campaign['list_id']);
-add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], true) || update_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id']);
+		add_post_meta($newsletter, 'mailchimp_campaign_name', $campaign['title'], true) || update_post_meta($newsletter, 'mailchimp_campaign_name', $campaign['title']);
+		add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], true) || update_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id']);
 
+
+		add_post_meta($newsletter, 'mailchimp_list', $campaign['list_id'], true) || update_post_meta($newsletter, 'mailchimp_list', $campaign['list_id']);
+		add_post_meta($newsletter, 'mailchimp_list_name', $list_name, true) || update_post_meta($newsletter, 'mailchimp_list_name', $list_name);
+		
+		add_post_meta($newsletter, 'mailchimp_account_name', $account_name, true) || update_post_meta($newsletter, 'mailchimp_account_name', $account_name);
 		return $campaign;
 	}
 	
@@ -98,7 +79,7 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		update_post_meta($newsletter, 'mailchimp_schedule', $time);
 	}
 	
-	function createCampaignScheduleBatch($nesletter, $campaignID, $time, $batches, $intervals){
+	function createCampaignScheduleBatch($newsletter, $campaignID, $time, $batches, $intervals){
 		$schedule = $this->MC->createCampaignScheduleBatch($campaignID, $time, $batches, $intervals);
 		
 		if ($this->isMailchimpError($schedule)){
@@ -110,6 +91,7 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		update_post_meta($newsletter, 'mailchimp_schedule', $time);
 		update_post_meta($newsletter, 'mailchimp_batch_batches', $batches);
 		update_post_meta($newsletter, 'mailchimp_batch_intervals', $intervals);
+		return $schedule;
 	}
 	
 	
@@ -119,11 +101,14 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		$apiKey 		= $_POST['api_key'];
 		$action			= $_POST['mailchimpAction'];
 		$list	 		= $_POST['list'];
+		$list_name		= $_POST['list_name'];
+		$account_name	= $_POST['account_name'];
 		$newsletter 	= $_POST['newsletter'];
 		$from_email		= $_POST['from_email'];
 		$from_name		= $_POST['from_name'];
 		$to_name		= $_POST['to_name'];
 		$subject		= $_POST['subject'];
+		$folder			= $_POST['folder'];
 		
 		// Schedules
 		$schedule_date	= $_POST['schedule_date'];
@@ -138,7 +123,10 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		
 		
 		
-		if ( ($campaign = $this->createCampaign($apiKey, $list, $newsletter, $subject, $from_email, $from_name, $to_name)) == false){
+		
+		
+		
+		if ( ($campaign = $this->createCampaign($apiKey, $list, $list_name, $account_name, $newsletter, $subject, $from_email, $from_name, $to_name, $folder)) == false){
 			echo json_encode(array('status' => 500, 'result' => $campaign));
 			exit(0);
 		}
@@ -150,65 +138,12 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 			} else {
 				$this->createCampaignSchedule($newsletter, $campaign['id'], $scheduleTime);				
 			}
-
 		} else if ($action == 'send'){
 			$this->sendCampaign($newsletter, $campaign['id']);
 		}
 		
 		echo json_encode(array('status' => 200, 'result' => $campaign));
 		exit(0);
-		
-		/*
-		
-		$this->createSchedule();
-		print_r($_POST);
-		die();
-
-		
-		// Templater & Mailchimp
-		$Templater = new EngNet_Newsletter_Templater();
-		$this->MC->setApiKey($apiKey);
-		
-		
-		// Title
-		$newsletterPost = get_post($newsletter);
-		$title = get_field('template', $newsletter);
-		$title = $title->post_title . ' - ' . $newsletterPost->post_title;
-		
-		
-		// Templates
-		$htmlTemplate = $Templater->getNewsletterHtml($newsletter);
-		$textTemplate = $Templater->getNewsletterText($newsletter);
-		
-		
-		// Create campaign
-		$campaign = $this->MC->createCampaign($list, $subject, $title, $from_email, $from_name, $to_name, $htmlTemplate, $textTemplate);
-		
-		
-		if (isset($campaign['status']) && $campaign['status'] == 'error'){
-			echo json_encode(array('status' => 500, 'result' => $campaign));
-			exit(0);
-		}
-		
-		
-		if ($action == 'create'){
-			// Create only
-			add_post_meta($newsletter, 'mailchimp_status', 'created', true) || update_post_meta($newsletter, 'mailchimp_status', 'created');
-		} else if ($action == 'schedule'){
-			
-		} else if ($action == 'send'){
-			// Send Campaign
-			
-		}
-		
-		// Attach identifiers
-		add_post_meta($newsletter, 'mailchimp_campaign', $campaign['id'], true) || update_post_meta($newsletter, 'mailchimp_campaign', $campaign['id']);
-		add_post_meta($newsletter, 'mailchimp_list', $campaign['list_id'], true) || update_post_meta($newsletter, 'mailchimp_list', $campaign['list_id']);
-add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], true) || update_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id']);
-		
-		exit(0);
-		*/
-		
 	}
 	
 	
@@ -231,6 +166,42 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		exit(0);
 	}
 	
+	function ajax_getMailchimpFolders(){
+		$apiKey = $_POST['api_key'];
+		$this->MC->setApiKey($apiKey);
+		$folders = $this->MC->getFolders();
+		if ($folders){
+			echo json_encode($folders);
+		} else {
+			echo json_encode(array());
+		}
+		exit(0);
+	}
+	
+	
+	function mailchimp_options_page_menu(){
+		add_options_page( 'MailChimp' );
+		add_submenu_page(
+			'edit.php?post_type=newsletter_template',
+			'MailChimp Settings',
+			'MailChimp Settings',
+			'edit_posts',
+			'newsletter_template_mailchimp_settings',
+			array($this, 'mailchimp_options_page')
+		);
+	}
+	
+	function mailchimp_options_page(){
+		?>
+		<div id="wrap">
+			<h2>MailChimp Settings</h2>
+			<script type="text/javascript">
+			window.location = "/wp-admin/admin.php?page=acf-options";
+			</script>
+		</div>
+		<?php
+	}
+	
 	
 	function mailchimp_add_metabox(){
 		add_meta_box(
@@ -250,6 +221,12 @@ add_post_meta($newsletter, 'mailchimp_campaign_web_id', $campaign['web_id'], tru
 		if (!$mailchimpStatus){
 			include('view/mailchimp/metabox-edit.php');
 		} else {
+			$accountName 	= get_post_meta($post->ID, 'mailchimp_account_name', true);
+			$listName		= get_post_meta($post->ID, 'mailchimp_list_name', true);
+			$campaignName	= get_post_meta($post->ID, 'mailchimp_campaign_name', true);
+			$webid			= get_post_meta($post->ID, 'mailchimp_campaign_web_id', true);
+		
+		
 			include('view/mailchimp/metabox-view.php');
 		}
 	}
