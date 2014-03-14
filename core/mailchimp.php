@@ -125,14 +125,14 @@ class EngNet_MailChimp
 		
 		
 		
-		
 		if ( ($campaign = $this->createCampaign($apiKey, $list, $list_name, $account_name, $newsletter, $subject, $from_email, $from_name, $to_name, $folder)) == false){
 			echo json_encode(array('status' => 500, 'result' => $campaign));
 			exit(0);
 		}
 		
 		if ($action == 'schedule'){
-			$scheduleTime = date("Y-m-d G:i:s", gmmktime("$schedule_date $schedule_hour:$schedule_min$schedule_a"));
+			$schedule_min = sprintf("%02s", $schedule_min);
+			$scheduleTime = gmdate("Y-m-d H:i:s", strtotime("$schedule_date $schedule_hour:$schedule_min$schedule_a + 4 hours"));
 			if (!empty($batch)){
 				$this->createCampaignScheduleBatch($newsletter, $campaign['id'], $scheduleTime, $batch_number, $batch_interval);
 			} else {
@@ -225,6 +225,7 @@ class EngNet_MailChimp
 			$listName		= get_post_meta($post->ID, 'mailchimp_list_name', true);
 			$campaignName	= get_post_meta($post->ID, 'mailchimp_campaign_name', true);
 			$webid			= get_post_meta($post->ID, 'mailchimp_campaign_web_id', true);
+			$scheduleDate	= get_post_meta($post->ID, 'mailchimp_schedule', true);
 		
 		
 			include('view/mailchimp/metabox-view.php');

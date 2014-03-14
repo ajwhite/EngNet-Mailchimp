@@ -12,10 +12,12 @@
 			<strong>Mailchimp Campaign</strong><br/>
 			<?php echo $campaignName; ?>
 		</li>
+		<?php if(isset($scheduleDate)): ?>
 		<li>
 			<strong>Mailchimp Scheduled</strong><br/>
-			MM/dd/YYYY H:i a
+			<?php echo date("F d, Y h:ia", strtotime($scheduleDate . " - 4 hours")); ?>
 		</li>
+		<?php endif; ?>
 	</ul>
 	
 	
