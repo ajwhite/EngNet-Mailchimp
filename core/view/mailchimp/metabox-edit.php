@@ -313,8 +313,12 @@
 					var result = $.parseJSON(resp);
 					$(".mailchimp-spinner").hide();
 					if (result.status == 500){
-						alert("Error creating campaign, please attempt manually.");
-						$button.removeAttr('disabled');
+						if (result.action == 'created'){
+							self.campaignSuccess('create');
+						} else {
+							$button.removeAttr('disabled');							
+						}
+						alert(result.message);
 					} else {
 						$button.text('Created');
 						self.campaignSuccess();
@@ -324,8 +328,8 @@
 			
 		},
 		
-		campaignSuccess: function(){
-			var action = $("input[name=mailchimp-action]:checked").val()
+		campaignSuccess: function(action){
+			var action = action ? action : $("input[name=mailchimp-action]:checked").val()
 			$("#mailchimp-forms").slideUp();
 			$("#mailchimp-success").show();
 			$(".mailchimp-status").removeClass('not-sent');

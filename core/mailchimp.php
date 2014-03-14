@@ -71,8 +71,6 @@ class EngNet_MailChimp
 		$schedule = $this->MC->createCampaignSchedule($campaignID, $time);
 		
 		if ($this->isMailchimpError($schedule)){
-			echo "ERROR";
-			print_r($schedule);
 			return false;
 		}
 		update_post_meta($newsletter, 'mailchimp_status', 'scheduled');
@@ -83,8 +81,6 @@ class EngNet_MailChimp
 		$schedule = $this->MC->createCampaignScheduleBatch($campaignID, $time, $batches, $intervals);
 		
 		if ($this->isMailchimpError($schedule)){
-			echo "ERROR";
-			print_r($schedule);
 			return false;
 		}
 		update_post_meta($newsletter, 'mailchimp_status', 'scheduled');
@@ -126,7 +122,7 @@ class EngNet_MailChimp
 		
 		
 		if ( ($campaign = $this->createCampaign($apiKey, $list, $list_name, $account_name, $newsletter, $subject, $from_email, $from_name, $to_name, $folder)) == false){
-			echo json_encode(array('status' => 500, 'result' => $campaign));
+			echo json_encode(array('status' => 500, 'result' => $campaign, 'message' => 'Could not create campaign', 'action' => 'none'));
 			exit(0);
 		}
 		
@@ -134,9 +130,16 @@ class EngNet_MailChimp
 			$schedule_min = sprintf("%02s", $schedule_min);
 			$scheduleTime = gmdate("Y-m-d H:i:s", strtotime("$schedule_date $schedule_hour:$schedule_min$schedule_a + 4 hours"));
 			if (!empty($batch)){
-				$this->createCampaignScheduleBatch($newsletter, $campaign['id'], $scheduleTime, $batch_number, $batch_interval);
+				if($this->createCampaignScheduleBatch($newsletter, $campaign['id'], $scheduleTime, $batch_number, $batch_interval) == false){
+					echo json_encode(array('status' => 500, 'message' => 'Campaign created, but could not create batch schedule', 'action' => 'created'));
+					exit(0);
+				}
 			} else {
-				$this->createCampaignSchedule($newsletter, $campaign['id'], $scheduleTime);				
+				if ($this->createCampaignSchedule($newsletter, $campaign['id'], $scheduleTime) == false){
+					echo json_encode(array('status' => 500, 'message' => 'Campaign created, but could not create schedule', 'action' => 'created'));
+					exit(0);
+				}
+				
 			}
 		} else if ($action == 'send'){
 			$this->sendCampaign($newsletter, $campaign['id']);
