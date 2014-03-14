@@ -8,21 +8,22 @@
 	<ul id="mailchimp-accounts">
 		<li><strong>Select MailChimp Account</strong></li>
 		<li>
-			<select id="mailchimp-account">
+			<select id="mailchimp-account" name="mailchimp-account">
 				<option value="">-- Accounts --</option>
 				<?php foreach($accounts as $account): ?>
 				<option value="<?php echo $account['api_key']; ?>"><?php echo $account['name']; ?></option>
 				<?php endforeach; ?>
 			</select>
+			<span class="spinner mailchimp-lists-spinner"></span>
+			<div class="clear"></div>
 		</li>
 	</ul>
-	
 	<ul id="mailchimp-lists"></ul>
 	
 	<ul id="mailchimp-folders">
 		<li><strong>Folder</strong> (optional)</li>
 		<li>
-			<select id="mailchimp-folder">
+			<select id="mailchimp-folder" name="mailchimp-folder">
 				<option value="">No Folder</option>
 			</select>
 		</li>
@@ -31,19 +32,19 @@
 	<ul id="mailchimp-defaults">
 		<li>
 			<label>Default From Email</label><br/>
-			<input type="text" class="text" id="mailchimp-default-from-email" />
+			<input type="text" class="text" name="mailchimp-default-from-email" id="mailchimp-default-from-email" />
 		</li>
 		<li>
 			<label>Default From Name</label><br/>
-			<input type="text" class="text" id="mailchimp-default-from-name" />
+			<input type="text" class="text" name="mailchimp-default-from-name" id="mailchimp-default-from-name" />
 		</li>
 		<li style="display:none;">
 			<label>Default To Name</label><br/>
-			<input type="text" class="text" id="mailchimp-default-to-name" />
+			<input type="text" class="text" name="mailchimp-default-to-name" id="mailchimp-default-to-name" />
 		</li>
 		<li>
 			<label>Subject</label><br/>
-			<input type="text" class="text" id="mailchimp-default-subject" />
+			<input type="text" class="text" name="mailchimp-default-subject" id="mailchimp-default-subject" />
 		</li>
 	</ul>
 	
@@ -53,39 +54,40 @@
 			<label><input type="radio" name="mailchimp-action" value="schedule" />Create &amp; Schedule Newsletter</label>
 			
 			<ul id="mailchimp-schedule-section">
-				<li><input type="text" id="mailchimp-schedule-date" class="text" placeholder="Date" /></li>
+				<li><input type="text" id="mailchimp-schedule-date" name="mailchimp-schdule-date" class="text" placeholder="Date" /></li>
 				<li>
-					<select id="mailchimp-schedule-hour">
+					<select id="mailchimp-schedule-hour" name="mailchimp-schedule-hour">
 						<?php for ($i=1; $i<=12; $i++): ?>
 						<option value="<?php echo $i; ?>"><?php echo $i; ?></option>
 						<?php endfor; ?>
 					</select>
 					:
-					<select id="mailchimp-schedule-minute">
+					<select id="mailchimp-schedule-minute" name="mailchimp-schedule-minute">
 						<?php for ($i=0; $i<=45; $i+=15): ?>
 						<option value="<?php echo $i; ?>"><?php echo sprintf("%02s", $i); ?></option>
 						<?php endfor; ?>
 					</select>
-					<select id="mailchimp-schedule-a">
+					<select id="mailchimp-schedule-a" name="mailchimp-schedule-a">
 						<option value="AM">AM</option>
 						<option value="PM">PM</option>
 					</select>
 				</li>
 				<li class="batches">
-					<input type="checkbox" id="mailchimp-batch-enabled" />
-					<select id="mailchimp-batch-number">
-						<option>2</option>
-						<option>4</option>
-						<option>6</option>
-						<option>8</option>
-						<option>10</option>
+					<input type="checkbox" id="mailchimp-batch-enabled" name="mailchimp-batch-enabled" />
+					<select id="mailchimp-batch-number" name="mailchimp-batch-number">
+						<?php for($i=2; $i<=22; $i++): ?>
+						<option value="<?php echo $i; ?>"><?php echo $i; ?></option>
+						<?php endfor; ?>
 					</select>
 					batches every
-					<select id="mailchimp-batch-interval">
-						<option>5 minutes</option>
-						<option>15 minutes</option>
-						<option>30 minutes</option>
-						<option>1 hour</option>
+					<select id="mailchimp-batch-interval" name="mailchimp-batch-interval">
+						<option value="5">5 minutes</option>
+						<option value="10">10 minutes</option>
+						<option value="15">15 minutes</option>
+						<option value="20">20 minutes</option>
+						<option value="25">25 minutes</option>
+						<option value="30">30 minutes</option>
+						<option value="60">1 hour</option>
 					</select>
 				</li>
 			</ul>
@@ -188,9 +190,43 @@
 			};
 		},
 		
+		validate: function(){
+			var fields = this.getCampaignFields();
+			// Account check
+			if ($("#mailchimp-account").val().length == 0){
+				alert("Please select a Mailchimp account");
+				return false;
+			}
+			
+			// List check
+			if ($("input[name=mailchimp-list]:checked").length == 0){
+				alert("Please select a Mailchimp list");
+				return false;
+			}
+			
+			if (fields.from_email.length == 0 || fields.from_name.length == 0 || fields.subject.length == 0){
+				alert("Please fill in the default fields");
+				return false;
+			}
+			
+			if ($("input[name=mailchimp-action]:checked").length == 0){
+				alert("Please select an action");
+				return false;
+			}
+			
+			if (fields.mailchimpAction == 'schedule'){
+				if (fields.schedule_date.length == 0){
+					alert("Please select a schedule date");
+					return false;
+				}
+			}
+			
+			return true;
+			
+		},
+		
 		events: function(){
 			var self = this;
-			
 
 			$('#mailchimp-schedule-date').datepicker({
 		        dateFormat : 'yy-mm-dd',
@@ -206,13 +242,14 @@
 					self.config.api_key = false;
 					return;
 				}
-				
+				$(".mailchimp-lists-spinner").show();
 				
 				self.config.api_key = $(this).val();
 				
 				self.getMailChimpLists(function(resp){
-					if (resp.length > 0){
-						var lists = $.parseJSON(resp);
+					$(".mailchimp-lists-spinner").hide();
+					var lists = $.parseJSON(resp);
+					if (lists.length > 0){
 						for (var i=0; i<lists.length; i++){
 							var list = lists[i];
 							var checkbox = $("<input type='radio' name='mailchimp-list' />")
@@ -233,6 +270,8 @@
 							
 						}
 						$("#mailchimp-lists").prepend("<li><strong>Lists</srong></li>");
+					} else {
+						alert("Unable to find any available lists, please check your API Keys or add a new list");
 					}
 				});
 				
@@ -265,6 +304,8 @@
 				}
 			});
 			$("#create-mailchimp-campaign").click(function(){
+				if (!self.validate()) return false;
+				
 				var $button = $(this);
 				$(".mailchimp-spinner").show();
 				$button.attr('disabled','disabled');

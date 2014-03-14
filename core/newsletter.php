@@ -135,11 +135,12 @@ class EngNet_Newsletter
 			
 			if (!empty($status)): 
 			?>
-			<strong><span class="mailchimp-status <?php echo $status; ?>"><?php echo ucfirst($status); ?></span></strong><br/>
-			
-			<a href="https://admin.mailchimp.com/campaigns/show?id=<?php echo $webid; ?>" target="_blank">View Campaign</a> |
-			<a href="https://admin.mailchimp.com/reports/summary?id=<?php echo $webid; ?>" target="_blank">View Report</a>
-
+			<strong><span class="mailchimp-status <?php echo $status; ?>"><?php echo ucfirst($status); ?></span></strong>
+				<?php if (!empty($webid)): ?>
+					<br/>
+					<a href="https://admin.mailchimp.com/campaigns/show?id=<?php echo $webid; ?>" target="_blank">View Campaign</a> |
+					<a href="https://admin.mailchimp.com/reports/summary?id=<?php echo $webid; ?>" target="_blank">View Report</a>
+				<?php endif; ?>
 			<?php 
 			endif; 
 		}
