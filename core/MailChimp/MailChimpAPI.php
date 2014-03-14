@@ -52,10 +52,14 @@
 			));
 		}
 		
-		public function createAndSendCampaign(){
-			$cid = $this->createCampaign();
-			$this->sendCampaign($cid);
+		public function createCampaignSchedule($campaignID, $time){
+			$this->call('campaigns/schedule', array(
+				'cid' => $campaignID,
+				'schedule_time' => $time
+			));
 		}
+		
+		public function createCampaignScheduleBatch(){}
 	}
 	
 ?>

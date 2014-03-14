@@ -20,7 +20,6 @@
 		MM/dd/YYYY H:i a
 	</div>
 	
-	
 </div>
 <style type="text/css">
 #newsletter_template_mailchimp .main_meta_content > div { margin: 10px 0; }
@@ -31,10 +30,8 @@
 	<div id="delete-action">
 		<?php if (!$mailchimpStatus): ?>
 			<span class="mailchimp-status not-sent">Not Sent</span>
-		<?php elseif ($mailchimpStatus == 'created'): ?>
-			<span class="mailchimp-status created">Created</span>
-		<?php elseif ($mailchimpStatus == 'sent'): ?>
-			<span class="mailchimp-status sent">Sent</span>
+		<?php else: ?>
+			<span class="mailchimp-status <?php echo $mailchimpStatus; ?>"><?php echo ucfirst($mailchimpStatus); ?></span>
 		<?php endif; ?>
 	</div>
 	<div id="publishing-action">

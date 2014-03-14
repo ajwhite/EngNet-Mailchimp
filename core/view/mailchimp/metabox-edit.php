@@ -28,7 +28,7 @@
 			<label>Default From Name</label><br/>
 			<input type="text" class="text" id="mailchimp-default-from-name" />
 		</li>
-		<li>
+		<li style="display:none;">
 			<label>Default To Name</label><br/>
 			<input type="text" class="text" id="mailchimp-default-to-name" />
 		</li>
@@ -60,6 +60,23 @@
 					<select id="mailchimp-schedule-a">
 						<option value="AM">AM</option>
 						<option value="PM">PM</option>
+					</select>
+				</li>
+				<li class="batches">
+					<input type="checkbox" id="mailchimp-batch-enabled" />
+					<select id="mailchimp-batch-number">
+						<option>2</option>
+						<option>4</option>
+						<option>6</option>
+						<option>8</option>
+						<option>10</option>
+					</select>
+					batches every
+					<select id="mailchimp-batch-interval">
+						<option>5 minutes</option>
+						<option>15 minutes</option>
+						<option>30 minutes</option>
+						<option>1 hour</option>
 					</select>
 				</li>
 			</ul>
@@ -117,19 +134,13 @@
 				api_key			: self.config.api_key
 			}, cb);
 		},
-		createCampaign: function(listID, action, subject, from_email, from_name, to_name, cb){
-			var self = this;
-			$.post('/wp-admin/admin-ajax.php',{
-				action			: 'createMailchimpCampaign',
-				api_key			: self.config.api_key,
-				newsletter		: self.config.postID,
-				mailchimpAction : action,
-				list			: listID,
-				subject			: subject,
-				from_email		: from_email,
-				from_name		: from_name,
-				to_name			: to_name
-			}, cb);
+		createCampaign: function(cb){
+			var options = this.getCampaignFields();
+			options.api_key = this.config.api_key;
+			options.newsletter = this.config.postID;
+			options.action = 'createMailchimpCampaign';
+
+			$.post('/wp-admin/admin-ajax.php', options, cb);
 		},
 		
 		getCampaignFields: function(){
@@ -140,19 +151,26 @@
 				from_email		: $("#mailchimp-default-from-email").val(),
 				from_name		: $("#mailchimp-default-from-name").val(),
 				to_name			: $("#mailchimp-default-to-name").val(),
+				
+				// scheduled campaigns
 				schedule_date	: $("#mailchimp-schedule-date").val(),
-				schedule_time_h	: $("#mailchimp-schedule-hour").val(),
-				schedule_time_m : $("#mailchimp-schedule-minute").val(),
-				schedule_time_a : $("#mailchimp-schedule-a").val()
+				schedule_hour	: $("#mailchimp-schedule-hour").val(),
+				schedule_min 	: $("#mailchimp-schedule-minute").val(),
+				schedule_a 		: $("#mailchimp-schedule-a").val(),
+				
+				// scheduled batch campaigns
+				batch_active	: $("#mailchimp-batch-enabled").is(":checked"),
+				batch_number	: $("#mailchimp-batch-number").val(),
+				batch_interval	: $("#mailchimp-batch-interval").val()
 			};
-		}
+		},
 		
 		events: function(){
 			var self = this;
 			
 
 			$('#mailchimp-schedule-date').datepicker({
-		        dateFormat : 'mm-dd-yy',
+		        dateFormat : 'yy-mm-dd',
 		        minDate: new Date()
 		    });
 
@@ -210,18 +228,10 @@
 				}
 			});
 			$("#create-mailchimp-campaign").click(function(){
-				var list = $("input[name=mailchimp-list]:checked").val();
-				var subject = $("#mailchimp-default-subject").val();
-				var from_email = $("#mailchimp-default-from-email").val();
-				var from_name = $("#mailchimp-default-from-name").val();
-				var to_name = $("#mailchimp-default-to-name").val();
-				var action = $("input[name=mailchimp-action]:checked").val();
-				
-				
 				var $button = $(this);
 				$(".mailchimp-spinner").show();
 				$button.attr('disabled','disabled');
-				self.createCampaign(list, action, subject, from_email, from_name, to_name, function(resp){
+				self.createCampaign(function(resp){
 					console.log(resp);
 					$(".mailchimp-spinner").hide();
 					$button.removeAttr('disabled');
